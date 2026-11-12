@@ -1,51 +1,14 @@
-# Evaluación en R
+# Taller integrador — Encuesta socioeconómica sintética 2026
 
-## Evaluación de archivos de datos y automatización de reportes de calidad en R
+1. Abra `encuesta_calidad.Rproj` en RStudio.
+2. Lea `GUIA_TALLER_INTEGRADOR_PASO_A_PASO.md`.
+3. Complete una a una las etapas `R/00_configuracion.R` a `R/08_verificar_entregables.R`.
+4. Asegure `resultados/07_paquete_reporte.rds` como entregable independiente.
+5. En **Terminal** ejecute `quarto render reportes/reporte_calidad.qmd --to html`.
+6. Para el sitio web, ejecute `quarto render web` y abra `web/_site/index.html`.
 
-### Integrantes
+Se proporcionan dos archivos mensuales para comparar períodos, un CSV combinado y una tabla maestra de hogares. No use el conjunto de datos para estadísticas reales. Contiene errores deliberados. No sobrescribir `data_raw/`.
 
-- Alexis Maldonado
-- Leonardo Rodríguez
-- Sofía Vargas
+Los scripts son **solución guiada y material de referencia**, no un flujo para ejecutar todo a ciegas. La bitácora muestra propuestas no aprobadas. El informe final debe citar umbrales y denominadores.
 
----
-
-## Descripción del repositorio
-
-Este repositorio contiene la resolución del taller solicitado. Los archivos están organizados en los siguientes directorios:
-
-### `resultados/`
-
-Incluye los insumos y evidencias generados durante el desarrollo del taller:
-
-- Capturas de las ejecuciones.
-- Archivo **“Evidencia E4: bitácora y explicación de propuestas”**.
-- Figuras y tablas.
-- Archivos de datos en formato `.rds`.
-
-### `reportes/`
-
-Contiene el reporte en formato HTML, generado con **Quarto**, que presenta las soluciones a las preguntas del **punto O**.
-
-### `web/_site/`
-
-Contiene los archivos HTML generados con **Quarto** para el sitio web del proyecto:
-
-- `index.html`: página principal.
-- `metodologia.html`: descripción de la metodología utilizada.
-
-## Estructura del repositorio
-
-```text
-.
-├── resultados/
-│   ├── Capturas de ejecución
-│   ├── Evidencia E4: bitácora y explicación de propuestas
-│   ├── Figuras y tablas
-│   └── Archivos .rds
-├── reportes/
-│   └── Reporte HTML con las soluciones del punto O
-└── web/
-    └── _site/
-        ├── index.html
-        └── metodologia.html
+**VISTA_PREVIA_HTML_AUTONOMA.html:** muestra visual auxiliar, generada sin R, no sustituye el informe Quarto y no forma parte de los entregables E7–E9.

@@ -1,0 +1,230 @@
+---
+title: "Informe técnico de calidad de datos"
+subtitle: "Encuesta socioeconómica sintética 2026 — práctica integradora"
+author: "Alexis Maldonado, Leonardo Rodríguez, Sofía Vargas"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+  docx:
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(here)
+library(dplyr)
+library(knitr)
+ruta_rds <- here::here('resultados', '07_paquete_reporte.rds')
+if (!file.exists(ruta_rds)) stop('Primero genere el RDS en la etapa 7')
+informe <- readRDS(ruta_rds)
+```
+
+## 1. Introducción
+
+Este informe presenta resultados de un **conjunto completamente sintético** para practicar la evaluación de archivos de datos. No contiene cifras reales del INEC y su distribución muestral fue desbalanceada deliberadamente.
+
+## 2. Objetivos
+
+- Identificar ausencias, formatos no válidos y relaciones incoherentes.
+- Mostrar indicadores con numeradores y denominadores verificables.
+- Comparar los períodos octubre y noviembre de 2026 y escenarios original/propuesta.
+- Documentar limitaciones antes de difundir resultados.
+
+## 3. Metodología y procedencia
+
+El conjunto contiene `r informe$metadatos$filas_original` registros de encuestas. Los controles se construyeron en scripts R independientes y se consolidaron en un archivo **RDS**. La etiqueta *pobreza didáctica* corresponde únicamente al umbral ilustrativo de USD `r informe$metadatos$umbral_pobreza_solo_didactico` por persona y mes. **No constituye una medición oficial.**
+
+La propuesta de normalización permanece en estado: **`r informe$metadatos$estado_correcciones`**.
+
+## 4. Indicadores de calidad
+
+```{r}
+#| label: tabla-indicadores
+knitr::kable(informe$tablas$indicadores,
+             caption='Indicadores por escenario (cifras del taller)')
+```
+
+```{r}
+#| label: figura-indicadores
+#| fig-cap: "Comparación descriptiva de indicadores."
+knitr::include_graphics(here::here('resultados','figuras','06_indicadores.png'))
+```
+
+## 5. Comparación entre períodos
+
+```{r}
+#| label: tabla-periodos
+knitr::kable(informe$tablas$indicadores_periodo,
+             caption='Indicadores por período; mismas reglas y definiciones')
+```
+
+## 6. Educación y zonas
+
+```{r}
+#| label: figura-educacion
+#| fig-cap: "Distribución educativa por período y zona, en registros."
+knitr::include_graphics(here::here('resultados','figuras','06_educacion.png'))
+```
+
+## 7. Ingresos y pobreza didáctica
+
+```{r}
+#| label: tabla-ingresos
+knitr::kable(informe$tablas$resumen_ingresos,
+             digits=2, caption='Media y mediana de ingresos monetarios válidos')
+```
+
+```{r}
+#| label: figura-ingresos
+#| fig-cap: "Distribución de ingresos. La vista está acercada a 0–3.000 USD."
+knitr::include_graphics(here::here('resultados','figuras','06_ingresos.png'))
+```
+
+```{r}
+#| label: figura-pobreza
+#| fig-cap: "Clasificación con umbral educativo; no es índice de pobreza oficial."
+knitr::include_graphics(here::here('resultados','figuras','06_pobreza.png'))
+```
+
+## 8. Alertas y propuestas de normalización
+
+```{r}
+#| label: tabla-alertas
+knitr::kable(head(informe$tablas$resumen_alertas, 15),
+             caption='Quince reglas con mayor frecuencia de alertas')
+```
+
+```{r}
+#| label: figura-alertas
+#| fig-cap: "Una persona puede tener más de una incidencia."
+knitr::include_graphics(here::here('resultados','figuras','06_alertas.png'))
+```
+
+Se registraron `r nrow(informe$bitacora)` propuestas de normalización, **no autorizadas**. La imputación estadística se examinó únicamente como escenario didáctico y no altera la base original.
+
+## 9. Interpretación y limitaciones
+
+La composición educativa y territorial del conjunto fue creada de forma desbalanceada; los resultados representan **solo esta simulación**. Las diferencias entre períodos no pueden interpretarse como tendencias poblacionales, ni los cambios entre escenario original/propuesta como mejoras oficiales sin validar su metodología y aprobación.
+
+## 10. Conclusiones
+
+El proceso de importación, perfilado, validación, integración y tabulación permitió producir resultados reproducibles. Antes de comunicar estos resultados, se deben inspeccionar las reglas, los denominadores, las incidencias y la bitácora de decisiones.
+
+## 11. Referencias y documentación
+
+- [R for Data Science (2e)](https://r4ds.hadley.nz/)
+- [Quarto — Getting Started](https://quarto.org/docs/get-started/)
+- [Quarto — MS Word](https://quarto.org/docs/output-formats/ms-word.html)
+
+
+## Anexo. 
+### O. Actividad de interpretación 
+
+```{r} 
+#| label: preparar-interpretacion 
+
+tabla_interpretacion <- readRDS( 
+  here::here('resultados', '07_paquete_reporte.rds') 
+)$tablas$indicadores 
+
+val_original <- tabla_interpretacion[ 
+  tabla_interpretacion$indicador == 'Validez' & 
+    tabla_interpretacion$escenario == 'Original', 
+] 
+
+val_propuesta <- tabla_interpretacion[ 
+  tabla_interpretacion$indicador == 'Validez' & 
+    tabla_interpretacion$escenario == 'Propuesta', 
+] 
+
+diferencia_validez <- val_propuesta$porcentaje - 
+  val_original$porcentaje 
+``` 
+
+
+1. **¿Por qué un dataset con pocas ausencias todavía puede tener problemas de validez, unicidad e integridad?** 
+
+   Porque la ausencia de datos es solamente una dimensión de la calidad. Un campo puede estar diligenciado y, aun así, contener un formato inválido, un valor fuera de rango o una categoría que no pertenece al catálogo. Asimismo, pueden existir identificadores repetidos, referencias sin correspondencia entre tablas o relaciones lógicas incumplidas. 
+
+   En este ejercicio, la completitud del escenario original es alta, pero todavía se detectan evaluaciones inválidas, filas involucradas en duplicidades y claves de hogar sin correspondencia. Por tanto, un porcentaje elevado de completitud no demuestra que el dataset sea válido, único, consistente o íntegro. Cada dimensión requiere reglas y denominadores propios. 
+
+2. **¿Cómo distinguirá una fila repetida de dos personas con un mismo identificador?** 
+
+   La repetición de `id_persona` dentro de un período es una señal de revisión, pero no demuestra por sí sola que las filas sean exactamente iguales. Para distinguir ambos casos se debe comparar el contenido completo de los registros: `id_encuesta`, `id_hogar`, características personales, ingresos, fecha de entrevista y demás variables disponibles. 
+
+   Una fila repetida presentaría los mismos valores que otra observación y podría corresponder a una duplicación durante el procesamiento. En cambio, dos registros con el mismo `id_persona`, pero con `id_encuesta` u otros atributos diferentes, podrían representar respuestas distintas afectadas por una asignación incorrecta del identificador. También debe conservarse la referencia a `fila_csv` para localizar las observaciones en la fuente. 
+
+   En este taller, el indicador de unicidad contabiliza las filas que participan en una clave repetida, no solamente las copias exactas ni únicamente la segunda aparición. Ninguna fila debe eliminarse sin revisar su procedencia. 
+
+3. **¿Qué significa un `id_hogar` sin correspondencia, y por qué no debemos eliminarlo sin investigación?** 
+
+   Significa que una persona declara un identificador de hogar que no aparece en la tabla maestra para la combinación de `id_hogar` y `periodo_referencia`. Esta situación se denomina clave huérfana o referencia sin correspondencia. 
+
+   Puede deberse a un error de digitación, una diferencia de período, una omisión en la tabla maestra o un problema durante la vinculación de los archivos. No implica necesariamente que la persona o su respuesta sean inválidas. 
+
+   Eliminar el registro sin investigar produciría pérdida de información, reduciría la trazabilidad y podría introducir sesgos en los resultados. Lo correcto es conservar la observación, registrar la alerta y verificar la clave en las fuentes correspondientes. Una clave ausente también debe tratarse por separado de una clave presente que no tiene correspondencia. 
+
+4. **¿Qué diferencia existe entre media y mediana ante un ingreso extremo alto?** 
+
+   La media aritmética se calcula sumando todos los valores y dividiendo el resultado entre el número de observaciones. Como utiliza directamente la magnitud de cada valor, es sensible a ingresos extremadamente altos. 
+
+   La mediana es el valor central de una serie ordenada. Su posición depende principalmente del orden de las observaciones, por lo que suele ser más robusta frente a valores extremos. 
+
+   Por ejemplo, para los ingresos `100, 300, 500 y 9000`, la media es `2475`, mientras que la mediana es `400`. El ingreso de 9000 eleva considerablemente la media, pero apenas modifica la posición central utilizada por la mediana. Sin embargo, que un valor sea extremo no demuestra que sea un error: puede ser una observación válida que requiere revisión contextual. 
+
+5. **¿Cuál es la diferencia entre corrección propuesta y corrección aprobada?** 
+
+   Una corrección propuesta es una modificación sugerida después de detectar una incidencia y aplicar una regla documentada. Se registra en la bitácora con su identificador, valor original, valor propuesto, regla, estado, responsable y fecha, pero todavía no ha sido validada ni autorizada. 
+
+   Una corrección aprobada es una propuesta que ha sido revisada y autorizada por el responsable correspondiente, siguiendo un criterio metodológico definido. Su aplicación debe conservar evidencia de la decisión y permitir comparar el resultado con la fuente original. 
+
+   En este ejercicio, las normalizaciones permanecen como **propuestas pendientes de autorización**. El archivo `data_raw` no se modifica y la imputación se mantiene en un escenario didáctico separado. Por tanto, no se debe afirmar que la base original fue corregida oficialmente. 
+
+6. **¿Qué indicador mejoró entre escenario original y propuesta? ¿Es correcto afirmar que mejoró la estadística oficial?** 
+
+   El indicador que mejoró fue la **validez**. En el escenario original se obtuvo `r val_original$porcentaje` %, con `r val_original$numerador` cumplimientos entre `r val_original$denominador` evaluaciones aplicables. En el escenario propuesto alcanzó `r val_propuesta$porcentaje` %, con `r val_propuesta$numerador` cumplimientos sobre el mismo denominador. 
+
+   La diferencia fue de **+`r sprintf("%.2f", diferencia_validez)` puntos porcentuales**, porque el numerador aumentó en `r val_propuesta$numerador - val_original$numerador` evaluaciones. Completitud, unicidad y consistencia permanecieron sin cambios. 
+
+   No es correcto afirmar que mejoró la estadística oficial. Los datos son completamente sintéticos, contienen errores incorporados deliberadamente y las modificaciones son propuestas no aprobadas. El resultado solamente demuestra el efecto de las reglas de normalización aplicadas dentro del ejercicio; no representa una mejora institucional del INEC ni de sus estadísticas. 
+
+7. **¿Por qué `saveRDS()` es necesario antes de elaborar el reporte Quarto?** 
+
+   En este proyecto, `saveRDS()` permite consolidar y conservar el paquete de resultados que necesita el informe: metadatos, tablas, alertas, bitácora y rutas de las figuras. A diferencia de un CSV, un archivo RDS puede almacenar una lista completa de objetos de R conservando su estructura y sus tipos de datos. 
+
+   Quarto ejecuta el documento en una sesión de R independiente. Por ello, el informe no debe depender de objetos como `personas`, `alertas` o `indicadores` que estén abiertos temporalmente en el entorno de RStudio. Mediante `readRDS()`, el documento recupera los resultados guardados y puede reproducir sus tablas y cifras desde una sesión nueva. 
+
+   Esta separación entre análisis y comunicación también facilita verificar que el HTML utiliza exactamente los resultados generados por los scripts, sin copiar números manualmente. 
+
+8. **¿Qué diferencia práctica existe entre generar un documento HTML y generar un sitio web de dos páginas?** 
+
+   Un documento HTML presenta el contenido en una sola página con una estructura principalmente lineal. En este taller, el informe reúne la introducción, metodología, resultados, gráficos, conclusiones y referencias en `reporte_calidad.html`. 
+
+   Un sitio web Quarto organiza varias páginas relacionadas mediante una configuración común y un sistema de navegación. En este caso, `index.qmd` presenta el panel de indicadores y `metodologia.qmd` contiene las definiciones y limitaciones. Al renderizar el proyecto se generan páginas conectadas dentro de `web/_site/`. 
+
+   Por tanto, el sitio no es simplemente un informe dividido en dos archivos: incorpora navegación, recursos compartidos y rutas entre páginas. También exige comprobar que los enlaces y las imágenes funcionen correctamente dentro de la carpeta final del sitio. 
+
+9. **¿Por qué los resultados desbalanceados no deben extrapolarse a Ecuador?** 
+
+   Porque el conjunto fue construido artificialmente para practicar R y evaluación de calidad. Su distribución territorial y educativa fue desbalanceada deliberadamente y se incorporaron errores con fines didácticos. No procede de un levantamiento real ni de un diseño muestral representativo de la población ecuatoriana. 
+
+   En consecuencia, las frecuencias y proporciones observadas describen únicamente los registros de la simulación. No cuentan con la representatividad, cobertura, ponderaciones ni controles necesarios para producir estimaciones nacionales. 
+
+   Extrapolar estos resultados a Ecuador podría generar conclusiones sesgadas o falsas. Tampoco es válido interpretar las diferencias entre octubre y noviembre como tendencias poblacionales o como efectos causales. 
+
+10. **¿Por qué la variable `pobreza_didactica` no equivale a pobreza monetaria oficial?** 
+
+    Porque `pobreza_didactica` utiliza una regla simplificada creada exclusivamente para el ejercicio: divide el ingreso mensual del hogar entre el número de miembros y clasifica como *Pobre* cuando el resultado es menor que **USD 185 por persona y mes**. 
+
+    Ese umbral es ficticio y no corresponde al método ni al umbral oficial de pobreza del Ecuador. El cálculo no incorpora los ajustes, criterios metodológicos, características del diseño muestral ni demás elementos necesarios para una medición oficial. 
+
+    La variable sirve únicamente para practicar validación, coherencia entre tablas, tabulación y representación gráfica. Por tanto, sus porcentajes no deben denominarse tasas oficiales de pobreza, compararse con indicadores institucionales ni utilizarse para describir la situación socioeconómica de la población ecuatoriana. 
+

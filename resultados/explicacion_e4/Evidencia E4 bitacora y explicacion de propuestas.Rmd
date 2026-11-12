@@ -1,0 +1,120 @@
+---
+title: "Evidencia E4 bitacora y explicacion de propuestas"
+output: html_document
+---
+
+La etapa de depuración generó `r nrow(informe$bitacora)` propuestas de normalización. Estas propuestas no modifican el archivo CSV original y permanecen en estado **PENDIENTE DE AUTORIZACIÓN**. La bitácora permite identificar qué se propuso cambiar, sobre qué registro, mediante qué regla y cuál era el valor original. 
+
+La comparación se realiza mediante `id_encuesta`, porque este identificador permite localizar de forma estable la respuesta. No se utiliza `id_persona` como identificador de la bitácora, debido a que en el ejercicio existen identificadores de persona duplicados deliberadamente. 
+
+```{r} 
+#| label: resumen-bitacora 
+
+resumen_bitacora <- informe$bitacora %>% 
+  count(variable, estado, name = "propuestas") %>% 
+  arrange(variable) 
+
+knitr::kable( 
+  resumen_bitacora, 
+  col.names = c("Variable", "Estado", "Número de propuestas"), 
+  caption = "Resumen de las propuestas registradas en la bitácora" 
+) 
+``` 
+
+#### Criterio de normalización 
+
+La normalización se limita a diferencias de representación cuya equivalencia es conocida. El procedimiento convierte temporalmente el texto a minúsculas, elimina los espacios situados al inicio y al final, y busca el valor en un diccionario de equivalencias. Si no existe una equivalencia inequívoca, se conserva el valor original. 
+
+Por ejemplo, las etiquetas `URBANA` y `Urbana` representan la misma categoría, pero escritas de diferente manera. Lo mismo ocurre con `Rural `, que contiene un espacio final, y con `SUPERIOR`, cuya diferencia respecto de `Superior` es únicamente el uso de mayúsculas. 
+
+```{r} 
+#| label: ejemplos-normalizacion 
+
+ejemplos_normalizacion <- dplyr::bind_rows( 
+  informe$bitacora %>% 
+    filter(variable == "zona", valor_original == "URBANA") %>% 
+    slice(1), 
+  informe$bitacora %>% 
+    filter(variable == "zona", valor_original == "Rural ") %>% 
+    slice(1), 
+  informe$bitacora %>% 
+    filter( 
+      variable == "nivel_educacion", 
+      valor_original == "SUPERIOR" 
+    ) %>% 
+    slice(1) 
+) %>% 
+  mutate( 
+    valor_original = paste0("[", valor_original, "]"), 
+    valor_propuesto = paste0("[", valor_propuesto, "]") 
+  ) %>% 
+  select( 
+    id_encuesta, 
+    periodo_referencia, 
+    variable, 
+    valor_original, 
+    valor_propuesto, 
+    estado 
+  ) 
+
+knitr::kable( 
+  ejemplos_normalizacion, 
+  col.names = c( 
+    "ID de encuesta", 
+    "Período", 
+    "Variable", 
+    "Valor original", 
+    "Valor propuesto", 
+    "Estado" 
+  ), 
+  caption = "Comparación de tres normalizaciones propuestas" 
+) 
+``` 
+
+En los tres casos se propone homogeneizar la representación sin crear una categoría nueva. Los corchetes de la tabla permiten visualizar el espacio final presente en `[Rural ]`. Estos cambios mejoran la concordancia con los catálogos utilizados en el taller, pero todavía requieren revisión y autorización antes de considerarse correcciones aprobadas. 
+
+#### Caso que permanece pendiente de revisión 
+
+No todos los valores fuera del catálogo pueden normalizarse automáticamente. El valor `99`, por ejemplo, no tiene una equivalencia inequívoca con ninguna categoría educativa, territorial o de zona. Por esta razón, no se reemplaza por la categoría más frecuente ni se convierte arbitrariamente en un valor válido. 
+
+```{r} 
+#| label: caso-pendiente-bitacora 
+
+caso_pendiente <- informe$alertas %>% 
+  filter( 
+    regla_id %in% c("V07", "V08", "V09"), 
+    trimws(valor_observado) == "99" 
+  ) %>% 
+  slice(1) 
+
+caso_pendiente %>% 
+  select( 
+    id_encuesta, 
+    periodo_referencia, 
+    variable, 
+    valor_observado, 
+    regla_id, 
+    descripcion 
+  ) %>% 
+  knitr::kable( 
+    col.names = c( 
+      "ID de encuesta", 
+      "Período", 
+      "Variable", 
+      "Valor observado", 
+      "Regla", 
+      "Descripción" 
+    ), 
+    caption = "Ejemplo de incidencia que permanece pendiente de revisión" 
+  ) 
+``` 
+
+El registro `r caso_pendiente$id_encuesta` presenta el valor `r caso_pendiente$valor_observado` en la variable `r caso_pendiente$variable`, identificado mediante la regla `r caso_pendiente$regla_id`. Como no existe una equivalencia documentada para este valor, se conserva la observación original y se mantiene la incidencia para revisión. La actuación correcta sería consultar la fuente o al responsable metodológico antes de decidir si corresponde a un código especial, un error de digitación o una categoría no contemplada. 
+
+#### Imputación didáctica y trazabilidad 
+
+El escenario `ingreso_imputado_demo` se mantiene separado de la variable original `ingreso_mensual_usd`. La mediana se calcula por período y zona utilizando ingresos numéricos no negativos, y se aplica únicamente como ejercicio sobre los ingresos ausentes. Los formatos inválidos y los valores negativos no se imputan automáticamente. 
+
+La imputación no recupera el ingreso verdadero de una persona. Por tanto, este escenario no debe utilizarse para afirmar que se corrigió la base original ni para calcular o comunicar pobreza oficial. 
+
+En síntesis, la bitácora proporciona trazabilidad porque conserva el identificador, la variable, el valor original, el valor propuesto, la regla aplicada, el estado, el responsable y la fecha. El proceso seguido es **conservar la fuente, detectar incidencias, formular propuestas y dejarlas pendientes de autorización**, no eliminar ni corregir datos indiscriminadamente. 

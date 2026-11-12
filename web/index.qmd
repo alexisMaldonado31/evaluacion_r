@@ -1,0 +1,86 @@
+--- 
+title: "Panel de calidad — encuesta socioeconómica sintética" 
+subtitle: "Entrega web del taller integrador" 
+--- 
+
+```{r} 
+library(here) 
+library(knitr) 
+library(dplyr) 
+
+# Al renderizar el sitio, la carpeta web/ puede convertirse en la raíz. 
+# Primero se busca resultados un nivel arriba; si no, se prueba la ruta habitual. 
+ruta_resultados <- here::here('..', 'resultados') 
+
+if (!dir.exists(ruta_resultados)) { 
+  ruta_resultados <- here::here('resultados') 
+} 
+
+ruta <- file.path(ruta_resultados, '07_paquete_reporte.rds') 
+
+if (!file.exists(ruta)) { 
+  stop('No se encontró 07_paquete_reporte.rds. Ejecute la etapa 7.') 
+} 
+
+p <- readRDS(ruta) 
+
+# Copiar las figuras al proyecto web para evitar rutas externas. 
+dir.create('figuras', showWarnings = FALSE) 
+
+figuras_png <- list.files( 
+  file.path(ruta_resultados, 'figuras'), 
+  pattern = '\\.png$', 
+  full.names = TRUE 
+) 
+
+file.copy( 
+  figuras_png, 
+  'figuras', 
+  overwrite = TRUE 
+) 
+
+``` 
+
+**Advertencia:** datos totalmente ficticios y desbalanceados. No usar para estadísticas oficiales ni inferencias sobre la población ecuatoriana. 
+
+## Indicadores de calidad 
+
+```{r} 
+knitr::kable( 
+  p$tablas$indicadores, 
+  digits = 2, 
+  caption = 'Indicadores descriptivos del conjunto sintético' 
+) 
+``` 
+
+```{r} 
+knitr::include_graphics( 
+  file.path('figuras', '06_indicadores.png') 
+) 
+``` 
+
+## Educación y territorio 
+
+```{r} 
+knitr::include_graphics( 
+  file.path('figuras', '06_educacion.png') 
+) 
+``` 
+
+## Ingreso, pobreza didáctica e incidencias 
+
+```{r} 
+knitr::include_graphics( 
+  file.path('figuras', '06_ingresos.png') 
+) 
+
+knitr::include_graphics( 
+  file.path('figuras', '06_pobreza.png') 
+) 
+
+knitr::include_graphics( 
+  file.path('figuras', '06_alertas.png') 
+) 
+``` 
+
+Los controles y figuras se calculan a partir del RDS. Consulte **Metodología** para conocer las definiciones, denominadores y advertencias. 
